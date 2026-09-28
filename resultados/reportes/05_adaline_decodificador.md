@@ -1,6 +1,6 @@
 # Experimento 05 --- ADALINE y la regla Delta: descodificador de binario a decimal
 
-> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-14 22:46.
+> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-28 11:37.
 > No editar a mano: se regenera con `python experimentos/ejecutar_todo.py`.
 
 Widrow y Hoff (1960) disenaron un sistema de aprendizaje *que si tiene en cuenta el error producido*. La diferencia con el perceptron es de una sola linea de codigo y cambia todo: la regla Delta aprende sobre la **salida lineal**, sin pasarla por la funcion umbral, de modo que el error es una magnitud real y derivable y el aprendizaje se convierte en un **descenso del gradiente** sobre el error cuadratico medio. El experimento resuelve el descodificador binario-decimal propuesto en la clase y verifica que la red recupera los pesos optimos con error practicamente nulo.

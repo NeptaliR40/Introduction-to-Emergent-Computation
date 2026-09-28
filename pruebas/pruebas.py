@@ -14,7 +14,10 @@ solo que el codigo no reviente:
 * que el perceptron converja en problemas separables y no lo haga en el XOR,
 * que la regla Delta alcance la solucion de minimos cuadrados,
 * que el gradiente implementado coincida con la derivada numerica del error,
-* que las derivadas de las activaciones coincidan con sus diferencias finitas.
+* que las derivadas de las activaciones coincidan con sus diferencias finitas,
+* que la retropropagacion del MLP coincida con el gradiente numerico y resuelva el XOR,
+* que el mapa de Kohonen ordene la rejilla y separe grupos bien definidos,
+* que la red de Hopfield almacene sus patrones como puntos fijos y nunca suba la energia.
 """
 
 from __future__ import annotations
@@ -32,10 +35,13 @@ from ce_rna import datasets as ds
 from ce_rna import metricas as mt
 from ce_rna.adaline import (Adaline, ecm_de_pesos, solucion_minimos_cuadrados)
 from ce_rna.hebb import RedHebb
+from ce_rna.hopfield import RedHopfield
+from ce_rna.kohonen import MapaKohonen, pureza
 from ce_rna.mcculloch_pitts import (NeuronaMCP, neurona_and, neurona_nand,
                                     neurona_nor, neurona_not, neurona_or,
                                     red_xor)
 from ce_rna.perceptron import PerceptronSimple
+from ce_rna.perceptron_multicapa import PerceptronMulticapa, gradiente_numerico
 
 
 # ---------------------------------------------------------------------------
@@ -291,6 +297,109 @@ def probar_conjunto_valida_longitudes():
     except ValueError:
         return
     raise AssertionError("se acepto un conjunto con X y d de distinta longitud")
+
+
+# ---------------------------------------------------------------------------
+# Perceptron multicapa
+# ---------------------------------------------------------------------------
+
+def probar_mlp_gradiente_numerico():
+    """La retropropagacion debe coincidir con las diferencias finitas de E(W)."""
+    X = ds.compuerta("XOR").X
+    D = np.random.default_rng(0).random((4, 2))
+    for salida in (act.Sigmoide(), act.Identidad()):
+        red = PerceptronMulticapa([2, 3, 2], activacion_salida=salida, semilla=3)
+        for analitico, numerico in zip(red.gradiente(X, D), gradiente_numerico(red, X, D)):
+            assert np.allclose(analitico, numerico, atol=1e-7), salida.nombre
+
+
+def probar_mlp_resuelve_xor():
+    xor = ds.compuerta("XOR")
+    red = PerceptronMulticapa([2, 2, 1], razon_aprendizaje=0.5, error_objetivo=0.005, semilla=0)
+    red.entrenar(xor.X, xor.d)
+    assert red.motivo_parada == "error_objetivo"
+    assert np.array_equal(red.predecir(xor.X), xor.d)
+
+
+def probar_mlp_error_decrece_en_lote():
+    """Con un paso pequeno en modo lote, el descenso por el gradiente no sube E."""
+    xor = ds.compuerta("XOR")
+    red = PerceptronMulticapa([2, 3, 1], razon_aprendizaje=0.1, modo="lote",
+                              max_epocas=200, error_objetivo=0.0, semilla=1)
+    e = red.entrenar(xor.X, xor.d).curva_error()
+    assert np.all(np.diff(e) <= 1e-12)
+
+
+def probar_mlp_parada_temprana_restaura():
+    ent, pru = ds.aproximacion_funcion(n_entrenamiento=10, n_prueba=20, ruido=0.3)
+    red = PerceptronMulticapa([1, 6, 1], activacion_salida=act.Identidad(), razon_aprendizaje=0.05,
+                              max_epocas=3000, error_objetivo=0.0, paciencia=50, semilla=0)
+    red.entrenar(ent.X, ent.d, pru.X, pru.d)
+    if red.motivo_parada == "parada_temprana":
+        assert np.isclose(red.error(pru.X, pru.d), np.nanmin(red.curva_error(prueba=True)))
+
+
+# ---------------------------------------------------------------------------
+# Kohonen
+# ---------------------------------------------------------------------------
+
+def probar_kohonen_separa_grupos():
+    datos = ds.grupos_plano()
+    mapa = MapaKohonen(10, 10, iteraciones=6000, semilla=0).entrenar(datos.X, n_instantaneas=0)
+    grupos = mapa.agrupar(datos.X)
+    assert len(np.unique(grupos)) == 5
+    assert pureza(grupos, datos.d) > 0.95
+    assert mapa.error_topografico(datos.X) < 0.05
+
+
+def probar_kohonen_reduce_cuantizacion():
+    datos = ds.grupos_plano()
+    mapa = MapaKohonen(6, 6, iteraciones=2000, inicializacion="rejilla", semilla=1)
+    mapa._inicializar(datos.X)
+    antes = mapa.error_cuantizacion(datos.X)
+    mapa.entrenar(datos.X, n_instantaneas=0)
+    assert mapa.error_cuantizacion(datos.X) < antes
+
+
+# ---------------------------------------------------------------------------
+# Hopfield
+# ---------------------------------------------------------------------------
+
+def probar_hopfield_pesos_simetricos():
+    red = RedHopfield(42).almacenar(ds.letras_abcd().X)
+    assert np.allclose(red.W, red.W.T)
+    assert np.allclose(np.diag(red.W), 0.0)
+
+
+def probar_hopfield_letras_son_puntos_fijos():
+    letras = ds.letras_abcd().X
+    for regla in ("hebb", "pseudoinversa"):
+        red = RedHopfield(42, regla=regla).almacenar(letras)
+        assert all(red.es_punto_fijo(p) for p in letras), regla
+
+
+def probar_hopfield_trazo_fino_falla_con_hebb():
+    """Las letras de trazo fino estan demasiado correlacionadas para la regla de Hebb."""
+    finas = ds.letras_abcd("fina").X
+    assert not all(RedHopfield(42).almacenar(finas).es_punto_fijo(p) for p in finas)
+    assert all(RedHopfield(42, "pseudoinversa").almacenar(finas).es_punto_fijo(p) for p in finas)
+
+
+def probar_hopfield_energia_no_aumenta():
+    letras = ds.letras_abcd().X
+    red = RedHopfield(42).almacenar(letras)
+    for semilla in range(20):
+        res = red.recuperar(ds.contaminar(letras[semilla % 4], 10, semilla=semilla), semilla=semilla)
+        assert res.convergio
+        assert np.all(np.diff(res.energia) <= 1e-12)
+
+
+def probar_hopfield_recupera_con_ruido():
+    letras = ds.letras_abcd().X
+    red = RedHopfield(42).almacenar(letras)
+    for mu in range(4):
+        res = red.recuperar(ds.contaminar(letras[mu], 3, semilla=mu), semilla=mu)
+        assert red.identificar(res.estado) == (mu, "patron")
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,6 @@
+parametro,valor,justificacion
+tamano del mapa,10x10,~4 veces menos neuronas que patrones: resolucion suficiente para ver fronteras (crestas) entre grupos sin que cada neurona represente 1-2 puntos
+iteraciones T,10000,~23 presentaciones por patron; el error de cuantizacion ya no mejora (seccion 6)
+eta_0 -> eta_f,0.5 -> 0.01,"paso grande para ordenar al principio, pequeno para afinar al final"
+sigma_0 -> sigma_f,5 -> 0.5,sigma_0 = medio mapa: al principio todo el mapa se mueve junto y se despliega sin pliegues; sigma_f < 1: al final solo la ganadora se mueve
+inicializacion,patrones al azar,"los prototipos empiezan dentro de la distribucion, sin ningun orden"

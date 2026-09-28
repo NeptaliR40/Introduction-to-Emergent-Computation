@@ -1,6 +1,6 @@
 # Experimento 01 --- McCulloch-Pitts: compuertas logicas AND y OR
 
-> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-14 22:46.
+> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-28 11:37.
 > No editar a mano: se regenera con `python experimentos/ejecutar_todo.py`.
 
 Primer modelo formal de neurona (McCulloch y Pitts, 1943). Las neuronas son binarias, los umbrales y las sinapsis **se mantienen fijos** --- no hay aprendizaje --- y la funcion de activacion es un escalon. El experimento verifica las compuertas AND y OR tal como se presentan en `claseRN02.md`, dibuja sus regiones de decision y demuestra por busqueda exhaustiva que una sola neurona de umbral no puede calcular el XOR, para despues construirlo componiendo tres neuronas.

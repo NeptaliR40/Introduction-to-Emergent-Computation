@@ -1,0 +1,6 @@
+configuracion,exito_%,epocas_mediana,epocas_min,epocas_max
+"estocastico, α = 0.0",85.0,1361.0,868.0,2567.0
+"estocastico, α = 0.5",85.0,747.0,436.0,1273.0
+"estocastico, α = 0.9",90.0,192.5,95.0,1785.0
+"lote, α = 0, γ = 2",90.0,1307.0,874.0,2544.0
+"lote, α = 0.9, γ = 2",85.0,168.0,103.0,328.0

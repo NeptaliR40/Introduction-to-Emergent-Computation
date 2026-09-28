@@ -1,7 +1,7 @@
 """
 Conjuntos de patrones de entrenamiento usados en los experimentos.
 
-Todos los conjuntos provienen directamente de los ejemplos de las clases:
+Todos los conjuntos provienen de los ejemplos de las clases y de la guia de evaluacion:
 
 * Compuertas logicas AND / OR (y sus parientes XOR, NAND, NOR) -> `claseRN02.md`
   y `ICE-claseRN03.md`.
@@ -9,6 +9,9 @@ Todos los conjuntos provienen directamente de los ejemplos de las clases:
   salida -> `ICE-claseRN03.md`, figura "Funcionamiento de un Perceptron".
 * Descodificador de binario a decimal de 3 bits -> `ICE-claseRN04.md`, ejemplo
   propuesto para el ADALINE.
+* Funcion no lineal a aproximar con el perceptron multicapa -> guia, actividad 3.
+* Cinco grupos de puntos en el plano para el mapa de Kohonen -> guia, actividad 4.
+* Letras A, B, C, D de 7x6 pixeles para la red de Hopfield -> guia, actividad 5.
 
 Convenciones
 ------------
@@ -325,4 +328,139 @@ def nubes_separables(
         nombres_entradas=["x1", "x2"],
         nombres_salidas=["clase"],
         descripcion="Dos nubes gaussianas separables por una recta; infinitas soluciones.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Perceptron multicapa: aproximacion de funciones  (Actividad 3)
+# ---------------------------------------------------------------------------
+
+def funcion_objetivo(x):
+    """f(x) = sin(x) + 0.5 sin(3x) en [-pi, pi].
+
+    Se elige porque no es lineal, no es monotona (tiene cuatro extremos en el
+    intervalo) y mezcla dos frecuencias: una sola neurona sigmoidal no puede
+    reproducirla, y el numero de neuronas ocultas necesario se puede estudiar.
+    """
+    x = np.asarray(x, dtype=float)
+    return np.sin(x) + 0.5 * np.sin(3.0 * x)
+
+
+def aproximacion_funcion(n_entrenamiento: int = 30, n_prueba: int = 200,
+                         ruido: float = 0.0, semilla: int = 0) -> tuple[Conjunto, Conjunto]:
+    """Conjuntos de entrenamiento y prueba para aproximar `funcion_objetivo`.
+
+    El entrenamiento usa `n_entrenamiento` puntos equiespaciados (con ruido
+    gaussiano opcional en la salida); la prueba usa `n_prueba` puntos distintos
+    del mismo intervalo, **sin ruido**, para medir la generalizacion, es decir,
+    lo que la red hace entre los puntos que vio.
+    """
+    rng = np.random.default_rng(semilla)
+    x_ent = np.linspace(-np.pi, np.pi, n_entrenamiento)
+    y_ent = funcion_objetivo(x_ent) + ruido * rng.normal(size=x_ent.size)
+    # puntos de prueba desplazados para que no coincidan con los de entrenamiento
+    x_pru = np.sort(rng.uniform(-np.pi, np.pi, n_prueba))
+    y_pru = funcion_objetivo(x_pru)
+    comun = dict(nombres_entradas=["x"], nombres_salidas=["f(x)"])
+    return (
+        Conjunto(X=x_ent[:, None], d=y_ent, nombre="f(x) - entrenamiento",
+                 descripcion="Puntos equiespaciados en [-pi, pi]", **comun),
+        Conjunto(X=x_pru[:, None], d=y_pru, nombre="f(x) - prueba",
+                 descripcion="Puntos aleatorios en [-pi, pi], sin ruido", **comun),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Mapas de Kohonen: distribucion de puntos con grupos  (Actividad 4)
+# ---------------------------------------------------------------------------
+
+#: Centros y dispersiones de los cinco grupos del plano.  Tienen tamanos,
+#: densidades y formas distintas a proposito: dos grupos proximos entre si
+#: (G0 y G1), uno alargado (G3) y uno mas disperso (G4).
+GRUPOS_PLANO = [
+    # (centro x, centro y, desviacion x, desviacion y, n puntos)
+    (-4.0, 3.5, 0.55, 0.55, 80),
+    (-0.5, 4.8, 0.45, 0.45, 60),
+    (3.5, 3.0, 0.70, 0.70, 90),
+    (-3.0, -3.0, 1.30, 0.40, 90),
+    (3.0, -3.0, 0.90, 0.90, 80),
+]
+
+
+def grupos_plano(semilla: int = 0, desplazamiento_g1: float = 0.0) -> Conjunto:
+    """Puntos del plano agrupados en cinco nubes gaussianas.
+
+    `d` contiene la etiqueta real del grupo (0..4), pero **solo** se usa para
+    evaluar el agrupamiento a posteriori: el mapa de Kohonen nunca la ve.
+
+    `desplazamiento_g1` acerca (valores negativos) o aleja el grupo G1 de G0
+    a lo largo de la recta que une sus centros; sirve para medir a partir de
+    que separacion el mapa deja de distinguirlos.
+    """
+    rng = np.random.default_rng(semilla)
+    puntos, etiquetas = [], []
+    c0 = np.array(GRUPOS_PLANO[0][:2])
+    for k, (cx, cy, sx, sy, n) in enumerate(GRUPOS_PLANO):
+        if k == 1 and desplazamiento_g1:
+            u = (np.array([cx, cy]) - c0) / np.linalg.norm(np.array([cx, cy]) - c0)
+            cx, cy = np.array([cx, cy]) + desplazamiento_g1 * u
+        puntos.append(rng.normal(loc=(cx, cy), scale=(sx, sy), size=(n, 2)))
+        etiquetas.append(np.full(n, k))
+    return Conjunto(
+        X=np.vstack(puntos),
+        d=np.concatenate(etiquetas).astype(float),
+        nombre="Cinco grupos en el plano",
+        nombres_entradas=["x1", "x2"],
+        nombres_salidas=["grupo_real"],
+        descripcion="Cinco nubes gaussianas de distinto tamano, densidad y forma.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Red de Hopfield: letras A, B, C, D en 7x6 pixeles  (Actividad 5)
+# ---------------------------------------------------------------------------
+
+#: Imagenes de 7 filas x 6 columnas = 42 pixeles.  '#' = negro (+1), '.' = blanco (-1).
+#:
+#: Se definen dos disenos de las mismas cuatro letras:
+#:
+#: * ``"fina"``: trazo de un pixel, el dibujo "natural".  B, C y D comparten la
+#:   columna izquierda y las filas superior e inferior, y en bipolar tambien
+#:   comparten la mayor parte del fondo blanco: el solapamiento B-C llega a 0.62.
+#: * ``"gruesa"``: redisenado para **reducir el solapamiento** entre letras
+#:   (maximo 0.33) sin perder legibilidad: B con doble trazo, C desplazada a la
+#:   derecha, D con el trazo curvo engrosado.  Es el diseno que usa la red.
+LETRAS_7X6 = {
+    "gruesa": {
+        "A": ["..##..", ".#..#.", "#....#", "######", "#....#", "#....#", "#....#"],
+        "B": ["#####.", "##..##", "##..##", "#####.", "##..##", "##..##", "#####."],
+        "C": ["..####", ".##...", "##....", "##....", "##....", ".##...", "..####"],
+        "D": ["####..", "#..##.", "#...##", "#...##", "#...##", "#..##.", "####.."],
+    },
+    "fina": {
+        "A": ["..##..", ".#..#.", "#....#", "#....#", "######", "#....#", "#....#"],
+        "B": ["#####.", "#....#", "#....#", "#####.", "#....#", "#....#", "#####."],
+        "C": [".####.", "#....#", "#.....", "#.....", "#.....", "#....#", ".####."],
+        "D": ["####..", "#...#.", "#....#", "#....#", "#....#", "#...#.", "####.."],
+    },
+}
+
+FORMA_7X6 = (7, 6)
+
+
+def letra_7x6(nombre: str, diseno: str = "gruesa") -> np.ndarray:
+    """Vector bipolar (42,) de la letra A, B, C o D, leido fila a fila."""
+    return _plantilla_a_vector(LETRAS_7X6[diseno][nombre.upper()])
+
+
+def letras_abcd(diseno: str = "gruesa") -> Conjunto:
+    """Las cuatro letras como patrones de 42 elementos (uno por fila)."""
+    nombres = list(LETRAS_7X6[diseno])
+    return Conjunto(
+        X=np.array([letra_7x6(n, diseno) for n in nombres]),
+        d=np.arange(len(nombres), dtype=float),
+        nombre=f"Letras A, B, C, D (7x6, trazo {diseno})",
+        nombres_entradas=[f"p{i}" for i in range(42)],
+        nombres_salidas=["indice_letra"],
+        descripcion="Imagenes binarias de 7x6 pixeles codificadas en bipolar.",
     )

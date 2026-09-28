@@ -17,6 +17,9 @@ Modulos
 `perceptron`       Perceptron simple unicapa y regla perceptronica (1958).
 `adaline`          Neurona lineal adaptativa y regla Delta (1960).
 `hebb`             Regla de Hebb supervisada (1949).
+`perceptron_multicapa`  MLP con retropropagacion del error (1986).
+`kohonen`          Mapa autoorganizado de Kohonen, no supervisado (1982).
+`hopfield`         Red de Hopfield, memoria asociativa (1982).
 `metricas`         Exactitud, matriz de confusion, ECM, RMSE, R2, margen.
 `visual`           Diagramas de red, fronteras de decision, curvas y superficies.
 `reportes`         Generacion automatica de los informes en Markdown.
@@ -29,20 +32,26 @@ Correspondencia con las clases
 | `claseRN02.md`        | McCulloch-Pitts, AND / OR          | `mcculloch_pitts` |
 | `ICE-claseRN03.md`    | Separabilidad lineal, perceptron   | `perceptron`, `hebb` |
 | `ICE-claseRN04.md`    | ADALINE y regla Delta              | `adaline`         |
+| Clases 5-7 (guia, act. 3) | MLP y backpropagation          | `perceptron_multicapa` |
+| Guia, actividad 4     | Mapas autoorganizados              | `kohonen`         |
+| Guia, actividad 5     | Memoria asociativa                 | `hopfield`        |
 """
 
-from . import (activaciones, adaline, datasets, hebb, mcculloch_pitts, metricas,
-               perceptron, reportes, visual)
+from . import (activaciones, adaline, datasets, hebb, hopfield, kohonen, mcculloch_pitts,
+               metricas, perceptron, perceptron_multicapa, reportes, visual)
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __all__ = [
     "activaciones",
     "adaline",
     "datasets",
     "hebb",
+    "hopfield",
+    "kohonen",
     "mcculloch_pitts",
     "metricas",
     "perceptron",
+    "perceptron_multicapa",
     "reportes",
     "visual",
 ]

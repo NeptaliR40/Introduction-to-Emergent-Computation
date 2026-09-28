@@ -1,6 +1,6 @@
 # Experimento 07 --- Regla de Hebb: aprendizaje de una sola pasada
 
-> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-14 22:46.
+> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-28 11:37.
 > No editar a mano: se regenera con `python experimentos/ejecutar_todo.py`.
 
 La regla de Hebb no comprueba errores, no itera y no tiene criterio de parada: presenta cada patron una vez y acumula el producto entrada x salida deseada. Es el aprendizaje mas barato posible, y el experimento delimita exactamente hasta donde llega --- incluido un caso en el que **falla**, que es el que mejor explica por que hizo falta inventar la regla perceptronica.

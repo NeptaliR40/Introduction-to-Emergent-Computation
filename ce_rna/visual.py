@@ -12,6 +12,8 @@ Este modulo genera las cuatro familias de figuras del repositorio:
 3. **Curvas de aprendizaje** (`curva_aprendizaje`, `curvas_comparadas`).
 4. **Mapas de retina y superficies de error** (`mapa_retina`, `rejilla_retinas`,
    `contorno_error`, `superficie_error_3d`).
+5. **Perceptron multicapa, Kohonen y Hopfield** (`region_continua`,
+   `grupos_en_plano`, `malla_kohonen`, `mapa_calor`).
 
 Criterios de diseno
 -------------------
@@ -43,6 +45,13 @@ TINTA = "#0b0b0b"     # texto primario y frontera de decision
 TINTA_2 = "#52514e"   # texto secundario
 GRIS = "#c9c8c3"      # rejilla
 SUPERFICIE = "#fcfcfb"
+AMARILLO = "#eda100"  # categoria 4 (solo en figuras de grupos)
+MAGENTA = "#e87ba4"   # categoria 5 (solo en figuras de grupos)
+
+#: Orden categorico fijo para figuras con mas de tres grupos (Kohonen).  Cada
+#: grupo lleva ademas su propio marcador: la identidad nunca depende solo del color.
+COLORES_GRUPO = [AZUL, NARANJA, AQUA, AMARILLO, MAGENTA]
+MARCADORES_GRUPO = ["o", "s", "^", "D", "v"]
 
 COLORES_CLASE = {1.0: AZUL, -1.0: NARANJA, 0.0: NARANJA}
 MARCADORES_CLASE = {1.0: "o", -1.0: "s", 0.0: "s"}
@@ -705,4 +714,136 @@ def tabla_a_figura(df, titulo: str = "", figsize=None, resaltar=None):
         elif resaltar and col == resaltar:
             celda.set_facecolor("#f7f9fc")
     ax.set_title(titulo, pad=16)
+    return fig, ax
+
+
+# ---------------------------------------------------------------------------
+# 5. Perceptron multicapa, Kohonen y Hopfield
+# ---------------------------------------------------------------------------
+
+def region_continua(predictor, X, d, titulo: str = "", etiquetas_ejes=("x1", "x2"),
+                    margen: float = 0.35, ax=None, figsize=(6.0, 5.2)):
+    """Salida continua de una red en el plano, con la curva de nivel 0.5.
+
+    Para un MLP la frontera de decision ya no es una recta: es la curva
+    y(x1, x2) = 0.5, que puede ser cualquier forma.  El fondo muestra la salida
+    real de la red (escala secuencial de un solo tono).
+    """
+    from matplotlib.colors import LinearSegmentedColormap
+
+    estilo()
+    creada = ax is None
+    if creada:
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.figure
+    X = np.asarray(X, dtype=float)
+    x_min, x_max = X[:, 0].min() - margen, X[:, 0].max() + margen
+    y_min, y_max = X[:, 1].min() - margen, X[:, 1].max() + margen
+    gx, gy = np.meshgrid(np.linspace(x_min, x_max, 250), np.linspace(y_min, y_max, 250))
+    z = np.asarray(predictor(np.column_stack([gx.ravel(), gy.ravel()])), dtype=float).reshape(gx.shape)
+    mapa = LinearSegmentedColormap.from_list("sec", ["#f5f4f1", "#86b6ef", "#1c5cab"])
+    im = ax.contourf(gx, gy, z, levels=np.linspace(0, 1, 11), cmap=mapa, zorder=0)
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label="salida de la red  y")
+    ax.contour(gx, gy, z, levels=[0.5], colors=[TINTA], linewidths=2.0, zorder=2)
+    d = np.asarray(d, dtype=float).ravel()
+    for valor, marcador, color, etiqueta in ((1.0, "o", AZUL, "d = 1"), (0.0, "s", NARANJA, "d = 0")):
+        m = d == valor
+        ax.scatter(X[m, 0], X[m, 1], s=140, c=color, marker=marcador, edgecolors="white",
+                   linewidths=1.8, zorder=4, label=etiqueta)
+    ax.plot([], [], color=TINTA, lw=2.0, label="frontera  y = 0.5")
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.set_xlabel(etiquetas_ejes[0])
+    ax.set_ylabel(etiquetas_ejes[1])
+    ax.set_title(titulo)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.12), ncols=3)
+    ax.grid(False)
+    return fig, ax
+
+
+def grupos_en_plano(X, grupos, titulo: str = "", nombres=None, ax=None, figsize=(6.4, 5.4)):
+    """Dispersion de puntos coloreados Y marcados por grupo (maximo cinco)."""
+    estilo()
+    creada = ax is None
+    if creada:
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.figure
+    X = np.asarray(X, dtype=float)
+    grupos = np.asarray(grupos).astype(int)
+    for k, g in enumerate(np.unique(grupos)):
+        m = grupos == g
+        nombre = nombres[k] if nombres else f"grupo {g}"
+        ax.scatter(X[m, 0], X[m, 1], s=26, c=COLORES_GRUPO[k % 5], marker=MARCADORES_GRUPO[k % 5],
+                   edgecolors="white", linewidths=0.6, zorder=3, label=f"{nombre} ({m.sum()})")
+    ax.set_xlabel("x1")
+    ax.set_ylabel("x2")
+    ax.set_title(titulo)
+    ax.set_aspect("equal", adjustable="datalim")
+    ax.legend(loc="best", fontsize=8)
+    return fig, ax
+
+
+def malla_kohonen(W, filas, columnas, X=None, titulo: str = "", ax=None, figsize=(6.0, 5.4)):
+    """Prototipos del mapa dibujados en el espacio de los datos, unidos como en la rejilla.
+
+    Las lineas unen neuronas vecinas en la rejilla: si el mapa esta bien
+    ordenado, la malla se despliega sobre los datos sin cruzarse.
+    """
+    estilo()
+    creada = ax is None
+    if creada:
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.figure
+    if X is not None:
+        X = np.asarray(X, dtype=float)
+        ax.scatter(X[:, 0], X[:, 1], s=10, c=GRIS, zorder=1, label="patrones")
+    M = np.asarray(W, dtype=float).reshape(filas, columnas, -1)
+    for f in range(filas):
+        ax.plot(M[f, :, 0], M[f, :, 1], color=AZUL, lw=1.0, zorder=2)
+    for c in range(columnas):
+        ax.plot(M[:, c, 0], M[:, c, 1], color=AZUL, lw=1.0, zorder=2)
+    ax.scatter(M[..., 0].ravel(), M[..., 1].ravel(), s=14, c=AZUL, edgecolors="white",
+               linewidths=0.6, zorder=3, label="prototipos w_j")
+    ax.set_title(titulo, fontsize=10)
+    ax.set_aspect("equal", adjustable="datalim")
+    return fig, ax
+
+
+def mapa_calor(M, titulo: str = "", etiquetas_filas=None, etiquetas_columnas=None,
+               anotar: bool = True, formato: str = "{:.2f}", divergente: bool = False,
+               etiqueta_barra: str = "", ax=None, figsize=(5.4, 4.6)):
+    """Matriz como mapa de calor: secuencial (un tono) o divergente (dos tonos + gris)."""
+    from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
+
+    estilo()
+    creada = ax is None
+    if creada:
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.figure
+    M = np.asarray(M, dtype=float)
+    if divergente:
+        mapa = LinearSegmentedColormap.from_list("div", [NARANJA, "#f0efec", AZUL])
+        limite = max(np.abs(M).max(), 1e-9)
+        im = ax.imshow(M, cmap=mapa, norm=TwoSlopeNorm(vmin=-limite, vcenter=0.0, vmax=limite))
+    else:
+        mapa = LinearSegmentedColormap.from_list("sec", ["#f5f4f1", "#86b6ef", "#1c5cab", "#0d366b"])
+        im = ax.imshow(M, cmap=mapa)
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label=etiqueta_barra)
+    if anotar and M.size <= 400:
+        umbral = np.nanmax(np.abs(M)) * 0.6
+        for (i, j), v in np.ndenumerate(M):
+            ax.text(j, i, formato.format(v), ha="center", va="center", fontsize=7,
+                    color="white" if abs(v) > umbral and not divergente else TINTA)
+    if etiquetas_filas is not None:
+        ax.set_yticks(range(len(etiquetas_filas)))
+        ax.set_yticklabels(etiquetas_filas)
+    if etiquetas_columnas is not None:
+        ax.set_xticks(range(len(etiquetas_columnas)))
+        ax.set_xticklabels(etiquetas_columnas)
+    ax.grid(False)
+    ax.set_title(titulo)
     return fig, ax

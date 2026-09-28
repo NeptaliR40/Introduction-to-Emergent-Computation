@@ -1,6 +1,6 @@
 # Experimento 02 --- Perceptron simple: aprendizaje de AND y OR
 
-> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-14 22:46.
+> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-28 11:37.
 > No editar a mano: se regenera con `python experimentos/ejecutar_todo.py`.
 
 El perceptron de Rosenblatt (1958) es la primera red **que aprende**: en lugar de fijar los pesos a mano como en McCulloch-Pitts, los ajusta a partir de ejemplos mediante la regla perceptronica. Este experimento entrena una red unicapa de una sola neurona de salida sobre las compuertas AND y OR, audita el algoritmo paso a paso y estudia como afectan la razon de aprendizaje, el punto de indeterminacion, la inicializacion y la codificacion de los datos.

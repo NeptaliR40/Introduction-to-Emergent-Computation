@@ -1,6 +1,6 @@
 # Experimento 04 --- Perceptron multiclase: reconocimiento de las letras X y O
 
-> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-14 22:46.
+> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-28 11:37.
 > No editar a mano: se regenera con `python experimentos/ejecutar_todo.py`.
 
 Una red unicapa con 25 entradas y **dos** neuronas de salida, una por clase. Es el mismo algoritmo del experimento 02 aplicado a un problema de reconocimiento de patrones reales, y sirve para comprobar dos propiedades que `claseRN01.md` atribuye a las redes neuronales: que la memoria queda almacenada *en el patron de pesos* y que la red tolera *estimulos incompletos, ruidosos o parcialmente erroneos*.

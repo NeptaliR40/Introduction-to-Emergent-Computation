@@ -1,6 +1,6 @@
 # Experimento 03 --- El limite del perceptron simple: el problema XOR
 
-> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-14 22:46.
+> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-28 11:37.
 > No editar a mano: se regenera con `python experimentos/ejecutar_todo.py`.
 
 Un perceptron de una capa solo puede trazar un hiperplano, de modo que solo resuelve problemas **linealmente separables**. El XOR no lo es. Este experimento documenta que el algoritmo perceptronico no converge sobre el XOR, mide hasta donde llega, y demuestra por busqueda exhaustiva sobre el espacio de pesos que el fallo no es del algoritmo sino de la arquitectura.

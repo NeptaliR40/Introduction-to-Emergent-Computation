@@ -1,6 +1,6 @@
 # Experimento 00 --- Catalogo de funciones de activacion
 
-> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-14 22:46.
+> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-28 11:37.
 > No editar a mano: se regenera con `python experimentos/ejecutar_todo.py`.
 
 Las funciones de activacion determinan *"el nivel de activacion de la neurona en terminos de la actividad existente en sus entradas"*. Este experimento dibuja el catalogo completo de `claseRN01.md` y comprueba una propiedad que condiciona todo el resto del repositorio: cuales son derivables y cuales no.

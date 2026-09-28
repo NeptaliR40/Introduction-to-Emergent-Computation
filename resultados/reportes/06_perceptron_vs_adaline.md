@@ -1,6 +1,6 @@
 # Experimento 06 --- Perceptron frente a ADALINE sobre las mismas compuertas
 
-> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-14 22:46.
+> Informe generado automaticamente por los scripts de `experimentos/` el 2026-09-28 11:37.
 > No editar a mano: se regenera con `python experimentos/ejecutar_todo.py`.
 
 Misma arquitectura, misma tarea, dos reglas de aprendizaje. El perceptron deja de corregir en cuanto acierta; el ADALINE sigue reduciendo el error aunque ya clasifique bien. Este experimento cuantifica que consecuencias tiene esa diferencia sobre la calidad de la frontera obtenida.

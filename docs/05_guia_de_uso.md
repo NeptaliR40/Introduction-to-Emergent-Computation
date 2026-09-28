@@ -21,10 +21,10 @@ Version de Python: **3.10 o superior** (se usan anotaciones `X | Y` y `list[T]`)
 ## 2. Como ejecutar todo
 
 ```bash
-# Regenera las 30+ figuras, las tablas CSV y los ocho informes
+# Regenera las figuras, las tablas CSV y los doce informes (~5 min)
 python experimentos/ejecutar_todo.py
 
-# Bateria de 29 pruebas (no requiere pytest)
+# Bateria de 40 pruebas (no requiere pytest)
 python pruebas/pruebas.py
 
 # Un experimento suelto
@@ -47,11 +47,14 @@ dos ejecuciones producen exactamente los mismos numeros y las mismas figuras.
 │   ├── perceptron.py          Perceptron simple unicapa (1958)
 │   ├── adaline.py             Neurona lineal adaptativa, regla Delta (1960)
 │   ├── hebb.py                Regla de Hebb supervisada (1949)
+│   ├── perceptron_multicapa.py  MLP con retropropagacion (1986)
+│   ├── kohonen.py             Mapa autoorganizado, no supervisado (1982)
+│   ├── hopfield.py            Memoria asociativa recurrente (1982)
 │   ├── metricas.py            Exactitud, confusion, ECM, RMSE, R2, margen
 │   ├── visual.py              Diagramas de red, fronteras, curvas, superficies
 │   └── reportes.py            Generador de informes en Markdown
 ├── experimentos/              Scripts ejecutables, uno por estudio
-├── pruebas/pruebas.py         29 pruebas sin dependencias externas
+├── pruebas/pruebas.py         40 pruebas sin dependencias externas
 ├── docs/                      Esta documentacion
 ├── clases/                    Material original de la asignatura
 └── resultados/
@@ -86,6 +89,9 @@ reporte.escribir()
 | `claseRN02.md` | McCulloch-Pitts, AND y OR | `mcculloch_pitts` | 01 |
 | `ICE-claseRN03.md` | Separabilidad lineal, perceptron, Hebb | `perceptron`, `hebb` | 02, 03, 04, 07 |
 | `ICE-claseRN04.md` | ADALINE y regla Delta | `adaline` | 05, 06 |
+| Clases 5-7 (guia, act. 3) | MLP, backpropagation, criterios de parada | `perceptron_multicapa` | 08, 09 |
+| Guia, act. 4 | Aprendizaje no supervisado, Kohonen | `kohonen` | 10 |
+| Guia, act. 5 | Memoria asociativa, Hopfield | `hopfield` | 11 |
 
 | Experimento | Pregunta que responde |
 |---|---|
@@ -97,6 +103,10 @@ reporte.escribir()
 | 05 | ¿Puede una red aproximar una funcion de salida real? |
 | 06 | ¿Que gana y que pierde el ADALINE frente al perceptron? |
 | 07 | ¿Hasta donde llega el aprendizaje de una sola pasada? |
+| 08 | ¿Puede un MLP aprender el XOR, y que representa su capa oculta? |
+| 09 | ¿Como aproxima un MLP una funcion, y cuando hay que parar? |
+| 10 | ¿Descubre un mapa de Kohonen los grupos sin etiquetas? |
+| 11 | ¿Recupera una red de Hopfield letras contaminadas? |
 
 ---
 
@@ -114,6 +124,11 @@ ds.contaminar(patron, n_pixeles=6, semilla=0)
 ds.decodificador_binario(n_bits=3)
 ds.pesos_optimos_decodificador(3)       # [0, 4, 2, 1]
 ds.nubes_separables(n_por_clase=40, separacion=3.0, dispersion=0.8)
+ds.aproximacion_funcion(n_entrenamiento=30, n_prueba=200, ruido=0.0)  # (entrenamiento, prueba)
+ds.funcion_objetivo(x)                  # sin(x) + 0.5 sin(3x)
+ds.grupos_plano(semilla=0, desplazamiento_g1=0.0)   # 5 grupos en el plano
+ds.letras_abcd("gruesa")                # A, B, C, D de 7x6 (o "fina")
+ds.letra_7x6("B")                       # vector bipolar (42,)
 ```
 
 Todo conjunto es un `Conjunto` con `.X`, `.d`, `.tabla()`, `.n_patrones`,
@@ -126,7 +141,21 @@ from ce_rna.mcculloch_pitts import neurona_and, neurona_or, RedMCP, red_xor
 from ce_rna.perceptron import PerceptronSimple
 from ce_rna.adaline import Adaline, solucion_minimos_cuadrados
 from ce_rna.hebb import RedHebb
+from ce_rna.perceptron_multicapa import PerceptronMulticapa, gradiente_numerico
+from ce_rna.kohonen import MapaKohonen, pureza
+from ce_rna.hopfield import RedHopfield
 ```
+
+`PerceptronMulticapa(capas, razon_aprendizaje, momento, activacion_salida, modo,
+max_epocas, error_objetivo, paciencia)` → `.entrenar(X, d, X_prueba, d_prueba)`,
+`.salida(X)`, `.predecir(X)`, `.propagar(X)`, `.gradiente(X, d)`, `.historial_df()`.
+
+`MapaKohonen(filas, columnas, eta_inicial, sigma_inicial, iteraciones)` →
+`.entrenar(X)`, `.ganadoras(X)`, `.impactos(X)`, `.matriz_u()`, `.agrupar(X)`,
+`.error_cuantizacion(X)`, `.error_topografico(X)`.
+
+`RedHopfield(n, regla="hebb" | "pseudoinversa")` → `.almacenar(P)`, `.recuperar(s0)`,
+`.energia(s)`, `.es_punto_fijo(s)`, `.identificar(s)`, `.solapamientos(s)`.
 
 Todos comparten la misma interfaz basica: `.entrenar(X, d)` (salvo McCulloch-Pitts,
 que no aprende), `.predecir(X)`, `.exactitud(X, d)`, `.resumen()`.
@@ -163,6 +192,10 @@ vz.contorno_error(Wi, Wj, E, trayectoria=..., optimo=...)
 vz.superficie_error_3d(Wi, Wj, E)
 vz.dibujar_activaciones()
 vz.tabla_a_figura(df, titulo)
+vz.region_continua(red.salida, X, d)   # salida continua y frontera y = 0.5 (MLP)
+vz.grupos_en_plano(X, grupos)          # hasta 5 grupos, color + marcador
+vz.malla_kohonen(W, filas, columnas, X)
+vz.mapa_calor(M, divergente=True)
 vz.guardar(fig, ruta)           # crea el directorio y cierra la figura
 ```
 
@@ -174,7 +207,7 @@ deficiencia de color, identidad de clase codificada **tambien** por forma de mar
 
 ## 6. Como anadir un experimento nuevo
 
-1. Crear `experimentos/exp08_lo_que_sea.py` empezando por `import _ruta`.
+1. Crear `experimentos/exp12_lo_que_sea.py` empezando por `import _ruta`.
 2. Construir un `Reporte`, ejecutar el estudio, anadir tablas y figuras.
 3. Guardar las figuras en `_ruta.FIGURAS` con `vz.guardar()`.
 4. Llamar a `reporte.escribir()` al final.
