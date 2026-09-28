@@ -21,10 +21,10 @@ Version de Python: **3.10 o superior** (se usan anotaciones `X | Y` y `list[T]`)
 ## 2. Como ejecutar todo
 
 ```bash
-# Regenera las figuras, las tablas CSV y los doce informes (~5 min)
+# Regenera las figuras, las tablas CSV y los trece informes (~6 min)
 python experimentos/ejecutar_todo.py
 
-# Bateria de 40 pruebas (no requiere pytest)
+# Bateria de 43 pruebas (no requiere pytest)
 python pruebas/pruebas.py
 
 # Un experimento suelto
@@ -50,12 +50,15 @@ dos ejecuciones producen exactamente los mismos numeros y las mismas figuras.
 │   ├── perceptron_multicapa.py  MLP con retropropagacion (1986)
 │   ├── kohonen.py             Mapa autoorganizado, no supervisado (1982)
 │   ├── hopfield.py            Memoria asociativa recurrente (1982)
+│   ├── imagenes.py            De una foto a la retina bipolar (preprocesamiento)
 │   ├── metricas.py            Exactitud, confusion, ECM, RMSE, R2, margen
 │   ├── visual.py              Diagramas de red, fronteras, curvas, superficies
 │   └── reportes.py            Generador de informes en Markdown
 ├── experimentos/              Scripts ejecutables, uno por estudio
-├── pruebas/pruebas.py         40 pruebas sin dependencias externas
+├── pruebas/pruebas.py         43 pruebas sin dependencias externas
 ├── docs/                      Esta documentacion
+├── datos/imagenes/            Ejemplos y carpeta para fotos propias
+├── presentaciones/            Diapositivas (.pptx)
 ├── clases/                    Material original de la asignatura
 └── resultados/
     ├── figuras/               PNG generados
