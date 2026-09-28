@@ -14,8 +14,8 @@ diagramas de red --- esta escrita a mano y documentada linea a linea.
 
 ```bash
 python3 -m pip install -r requirements.txt
-python3 experimentos/ejecutar_todo.py     # regenera 65 figuras, 74 tablas y 12 informes (~5 min)
-python3 pruebas/pruebas.py                # 40 pruebas, sin dependencias externas
+python3 experimentos/ejecutar_todo.py     # regenera 71 figuras, 81 tablas y 13 informes (~6 min)
+python3 pruebas/pruebas.py                # 43 pruebas, sin dependencias externas
 ```
 
 ---
@@ -49,10 +49,16 @@ salida deseada y el segundo no clasifica sino que *recuerda*.
 | 4 | Mapas autoorganizados de Kohonen: grupos en el plano | experimento [10](resultados/reportes/10_kohonen.md) |
 | 5 | Red de Hopfield: letras A, B, C, D de 7x6 pixeles con ruido | experimento [11](resultados/reportes/11_hopfield.md) |
 | 6 | Seminario de investigacion sobre un articulo | [docs/09](docs/09_seminario_investigacion.md): Baldi, Sadowski y Whiteson (2014), *Nature Communications* 5, 4308 |
+| + | Imagenes reales: entrenar y evaluar con fotos | experimento [12](resultados/reportes/12_imagenes_reales.md) |
+
+**Presentaciones** (PowerPoint, con notas para el orador):
+
+- [`presentaciones/01_resultados_evaluacion_rna.pptx`](presentaciones/01_resultados_evaluacion_rna.pptx) --- resultados de las seis actividades y del experimento con imagenes reales (15 diapositivas).
+- [`presentaciones/02_seminario_baldi_2014.pptx`](presentaciones/02_seminario_baldi_2014.pptx) --- presentacion oral del seminario, siguiendo el guion de [docs/09](docs/09_seminario_investigacion.md) (10 diapositivas, ~15 min).
 
 ---
 
-## Los doce experimentos
+## Los trece experimentos
 
 Cada experimento es un script ejecutable que produce figuras, tablas CSV y un informe
 en Markdown **generado automaticamente** a partir de la misma ejecucion que produce
@@ -72,6 +78,7 @@ los numeros.
 | 09 | Perceptron multicapa: aproximacion | ¿Cuantas neuronas ocultas hacen falta, y cuando parar? | [ver](resultados/reportes/09_mlp_aproximacion.md) |
 | 10 | Mapas de Kohonen | ¿Descubre el mapa los grupos sin que se los digan? | [ver](resultados/reportes/10_kohonen.md) |
 | 11 | Red de Hopfield | ¿Recupera letras contaminadas con ruido, y cuando falla? | [ver](resultados/reportes/11_hopfield.md) |
+| 12 | Imagenes reales | ¿Reconocen las redes fotos de letras, y que hace falta para entrenarlas? | [ver](resultados/reportes/12_imagenes_reales.md) |
 
 ---
 
@@ -170,6 +177,50 @@ pureza ≈ 0.99, sin haber visto ninguna etiqueta.
 Las cuatro letras de 7x6 son atractores; con 8 de 42 pixeles invertidos la red recupera
 la letra correcta en ~87 % de los casos.
 
+### Imagenes reales: de la foto a la retina, y a una red entrenada
+
+<p align="center">
+  <img src="resultados/figuras/12_preprocesamiento.png" width="94%">
+</p>
+
+<p align="center">
+  <img src="resultados/figuras/12_robustez.png" width="62%">
+</p>
+
+El modulo [`imagenes.py`](ce_rna/imagenes.py) convierte cualquier foto (PNG, JPG...) en
+la retina bipolar de 7x6: escala de grises, correccion de la iluminacion, umbral de Otsu,
+recorte que ignora motas de ruido y reduccion por bloques. Con letras de seis
+tipografias y distorsiones de camara, un perceptron multicapa 42-16-4 entrenado con 800
+imagenes acierta el 100 % incluso en una tipografia que nunca vio, mientras que la red de
+Hopfield se queda en el 52 % con letras de trazo fino: es una memoria de una imagen por
+letra, no un clasificador. Con distorsiones fuertes el MLP solo aguanta si se entrena con
+ejemplos igual de distorsionados (*aumento de datos*).
+
+**Entrenar con fotos propias:**
+
+```bash
+# 1. Fotografiar letras A, B, C, D (una por foto) y guardarlas asi:
+#    datos/imagenes/propias/A/foto1.jpg, datos/imagenes/propias/B/..., etc.
+# 2. Evaluarlas con los modelos del experimento:
+python3 experimentos/exp12_imagenes_reales.py --carpeta datos/imagenes/propias
+```
+
+```python
+from ce_rna import imagenes
+from ce_rna.perceptron_multicapa import PerceptronMulticapa
+import numpy as np
+
+X, etiquetas, _ = imagenes.cargar_carpeta("datos/imagenes/propias")   # X: (n, 42) en ±1
+y = np.array(["ABCD".index(e) for e in etiquetas])
+D = np.eye(4)[y]                                                       # codificacion uno de n
+red = PerceptronMulticapa([42, 16, 4], razon_aprendizaje=0.1, momento=0.5, max_epocas=150)
+red.entrenar(X, D)
+print("ABCD"[np.argmax(red.salida(imagenes.preprocesar("mi_foto.jpg")[None]))])
+```
+
+Con pocas fotos conviene reservar algunas para prueba y multiplicar el resto con
+`imagenes.distorsionar` (aumento de datos).
+
 ---
 
 ## Hallazgos que merecen destacarse
@@ -199,6 +250,10 @@ la version habitual de los manuales:
   Lo que los hace raros con poco ruido es el tamano de su cuenca, no su profundidad.
 - **Clasificar bien el XOR llega mucho antes que un error pequeno**: con E ≤ 0.05 las
   cuatro clases ya son correctas, pero las salidas estan a 0.3 de la frontera.
+- **Con fotos, el preprocesamiento pesa mas que la red.** Sin corregir la iluminacion ni
+  filtrar las motas de ruido, el recorte se desplaza y la retina de 7x6 difiere en 12 de
+  42 pixeles de la letra limpia; con esas dos correcciones, en 4. El acierto de todos los
+  modelos cambia mas por eso que por cambiar de red.
 - **Sin vecindad no hay mapa**: un Kohonen sin cooperacion cuantiza mejor, pero su
   error topografico sube de ~0.01 a ~0.95 y la matriz U ya no revela los grupos.
 
@@ -208,9 +263,11 @@ la version habitual de los manuales:
 
 ```
 ce_rna/            El paquete: modelos, metricas, figuras e informes
-experimentos/      Doce scripts ejecutables, uno por estudio
-pruebas/           40 pruebas de propiedades matematicas, sin pytest
+experimentos/      Trece scripts ejecutables, uno por estudio
+pruebas/           43 pruebas de propiedades matematicas, sin pytest
 docs/              Documentacion teorica y de la API
+datos/imagenes/    Imagenes de ejemplo y carpeta para fotos propias
+presentaciones/    Diapositivas de resultados y del seminario (.pptx)
 clases/            Material original de la asignatura
 resultados/        Figuras, tablas CSV e informes generados
 ```
@@ -265,10 +322,12 @@ La bateria de [`pruebas/pruebas.py`](pruebas/pruebas.py) comprueba propiedades
 - la regla de Hebb falla en el AND binario y funciona en el bipolar;
 - la retropropagacion coincide con el gradiente numerico y la red 2-2-1 resuelve el XOR;
 - el mapa de Kohonen separa los cinco grupos y preserva la topologia;
-- las letras son puntos fijos de la red de Hopfield y la energia nunca aumenta.
+- las letras son puntos fijos de la red de Hopfield y la energia nunca aumenta;
+- el preprocesamiento de imagenes da una retina bipolar independiente de la posicion de
+  la letra en la foto y de su polaridad (tinta oscura o clara).
 
 ```
-40 de 40 pruebas superadas
+43 de 43 pruebas superadas
 ```
 
 ---

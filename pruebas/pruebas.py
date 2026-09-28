@@ -402,6 +402,37 @@ def probar_hopfield_recupera_con_ruido():
         assert red.identificar(res.estado) == (mu, "patron")
 
 
+
+# ---------------------------------------------------------------------------
+# Imagenes reales
+# ---------------------------------------------------------------------------
+
+def probar_otsu_separa_dos_niveles():
+    from ce_rna import imagenes
+    g = np.concatenate([np.full(500, 0.2), np.full(500, 0.8)])
+    assert 0.2 <= imagenes.umbral_otsu(g) < 0.8
+
+
+def probar_preprocesar_devuelve_retina_bipolar():
+    from ce_rna import imagenes
+    p = imagenes.preprocesar(imagenes.renderizar_letra("A"), forma=(7, 6))
+    assert p.shape == (42,)
+    assert set(np.unique(p)) <= {-1, 1}
+    assert 0 < np.sum(p == 1) < 42
+
+
+def probar_preprocesar_invariante_a_posicion_y_polaridad():
+    from ce_rna import imagenes
+    from PIL import Image, ImageOps
+    letra = imagenes.renderizar_letra("B")
+    base = imagenes.preprocesar(letra)
+    lienzo = Image.new("L", (320, 240), 255)
+    lienzo.paste(letra, (130, 50))  # la letra en otra posicion de una foto mayor
+    # la foto mayor se reduce a 256 px de lado: se admite algun pixel de diferencia
+    assert np.sum(imagenes.preprocesar(lienzo) != base) <= 2
+    assert np.array_equal(imagenes.preprocesar(ImageOps.invert(letra)), base)
+
+
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------

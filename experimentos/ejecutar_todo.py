@@ -1,5 +1,5 @@
 """
-Ejecuta los doce experimentos en orden y regenera todas las figuras, tablas e
+Ejecuta los trece experimentos en orden y regenera todas las figuras, tablas e
 informes de `resultados/`.
 
     python experimentos/ejecutar_todo.py
@@ -31,6 +31,7 @@ EXPERIMENTOS = [
     ("exp09_mlp_aproximacion", "Perceptron multicapa: aproximacion de funciones"),
     ("exp10_kohonen", "Mapas autoorganizados de Kohonen"),
     ("exp11_hopfield", "Red de Hopfield: letras A, B, C, D"),
+    ("exp12_imagenes_reales", "Imagenes reales: Hopfield frente a MLP entrenado"),
 ]
 
 

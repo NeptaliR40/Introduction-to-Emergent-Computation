@@ -1,0 +1,6 @@
+conjunto,tipografias,imagenes
+entrenamiento del MLP,"sans_negrita, sans, serif_negrita, serif, mono",800
+validacion del MLP (parada temprana),"sans_negrita, sans, serif_negrita, serif, mono",200
+prueba A: tipografia de las memorias,sans_negrita,240
+prueba B: tipografias del entrenamiento,"sans_negrita, sans, serif_negrita, serif, mono",240
+prueba C: tipografia nueva,mono_negrita,240
